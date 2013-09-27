@@ -175,6 +175,15 @@
     // Inform app that the activity has finished
     [self activityDidFinish:YES];
 }
+    
+    
+- (void)dismissDocumentInteractionControllerAnimated:(BOOL)animated {
+    // Hide menu
+    [self.docController dismissMenuAnimated:animated];
+    
+    // Inform app that the activity has finished
+    [self activityDidFinish:NO];
+}
 
 @end
 
