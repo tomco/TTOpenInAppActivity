@@ -10,7 +10,7 @@ Pod::Spec.new do |s|
                     DESC
   s.homepage     = 'https://github.com/honkmaster/TTOpenInAppActivity'
   s.authors      = { 'Tobias Tiemerding' => 'http://www.tiemerding.com' }
-  s.source       = { :git => 'https://github.com/tomco/TTOpenInAppActivity.git', :commit => '9cd758169a4effe8fb68a37a6e398e7ae32c39ca' }
+  s.source       = { :git => 'https://github.com/tomco/TTOpenInAppActivity.git', :commit => 'fd35a910e89247c328ebaaa3e4bd28934134de5e' }
   s.source_files = 'TTOpenInAppActivity/*.{h,m}'
   s.resources    = 'TTOpenInAppActivity/*.png'
   s.frameworks   = 'UIKit', 'MobileCoreServices'
