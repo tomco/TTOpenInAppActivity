@@ -11,19 +11,17 @@
 #import "TTOpenInAppActivity.h"
 #import <MobileCoreServices/MobileCoreServices.h> // For UTI
 
-@interface TTOpenInAppActivity () <UIActionSheetDelegate>
+@interface TTOpenInAppActivity ()
+    // Private attributes
+    @property (nonatomic, strong) NSURL *fileURL;
+    @property (atomic) CGRect rect;
+    @property (nonatomic, strong) UIBarButtonItem *barButtonItem;
+    @property (nonatomic, strong) UIView *superView;
+    @property (nonatomic, strong) UIDocumentInteractionController *docController;
 
-// Private attributes
-@property (nonatomic, strong) NSArray *fileURLs;
-@property (atomic) CGRect rect;
-@property (nonatomic, strong) UIBarButtonItem *barButtonItem;
-@property (nonatomic, strong) UIView *superView;
-@property (nonatomic, strong) UIDocumentInteractionController *docController;
-
-// Private methods
-- (NSString *)UTIForURL:(NSURL *)url;
-- (void)openDocumentInteractionControllerWithFileURL:(NSURL *)fileURL;
-- (void)openSelectFileActionSheet;
+    // Private methods
+    - (NSString *)UTIForURL:(NSURL *)url;
+    - (void)openDocumentInteractionController;
 
 @end
 
@@ -78,20 +76,16 @@
 		}
 	}
 	
-	return (count >= 1);
+	return (count == 1);
 }
 
 - (void)prepareWithActivityItems:(NSArray *)activityItems
 {
-    NSMutableArray *fileURLs = [NSMutableArray array];
-    
 	for (id activityItem in activityItems) {
 		if ([activityItem isKindOfClass:[NSURL class]] && [(NSURL *)activityItem isFileURL]) {
-            [fileURLs addObject:activityItem];
+			self.fileURL = activityItem;
 		}
 	}
-    
-    self.fileURLs = [fileURLs copy];
 }
 
 - (void)performActivity
@@ -105,24 +99,14 @@
     if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone){
         // iPhone dismiss UIActivityViewController
         [self.superViewController dismissViewControllerAnimated:YES completion:^(void){
-            if (self.fileURLs.count > 1) {
-                [self openSelectFileActionSheet];
-            }
-            else {
-                // Open UIDocumentInteractionController
-                [self openDocumentInteractionControllerWithFileURL:self.fileURLs.lastObject];
-            }
+            // Open UIDocumentInteractionController
+            [self openDocumentInteractionController];
         }];
     } else {
         [self.superViewController dismissPopoverAnimated:YES];
         [((UIPopoverController *)self.superViewController).delegate popoverControllerDidDismissPopover:self.superViewController];
-        if (self.fileURLs.count > 1) {
-            [self openSelectFileActionSheet];
-        }
-        else {
-            // Open UIDocumentInteractionController
-            [self openDocumentInteractionControllerWithFileURL:self.fileURLs.lastObject];
-        }
+        // Open UIDocumentInteractionController
+        [self openDocumentInteractionController];
     }
 }
 
@@ -133,12 +117,12 @@
     return (NSString *)CFBridgingRelease(UTI) ;
 }
 
-- (void)openDocumentInteractionControllerWithFileURL:(NSURL *)fileURL
+- (void)openDocumentInteractionController
 {
     // Open "Open in"-menu
-    self.docController = [UIDocumentInteractionController interactionControllerWithURL:fileURL];
+    self.docController = [UIDocumentInteractionController interactionControllerWithURL:self.fileURL];
     self.docController.delegate = self;
-    self.docController.UTI = [self UTIForURL:fileURL];
+    self.docController.UTI = [self UTIForURL:self.fileURL];
     BOOL sucess; // Sucess is true if it was possible to open the controller and there are apps available
     
     if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone){
@@ -171,38 +155,6 @@
     }
 }
 
-- (void)dismissDocumentInteractionControllerAnimated:(BOOL)animated {
-    // Hide menu
-    [self.docController dismissMenuAnimated:animated];
-    
-    // Inform app that the activity has finished
-    [self activityDidFinish:NO];
-}
-
-- (void)openSelectFileActionSheet
-{
-    UIActionSheet *actionSheet = [[UIActionSheet alloc] initWithTitle:NSLocalizedString(@"Select a file", @"Select a file")
-                                                             delegate:self
-                                                    cancelButtonTitle:nil
-                                               destructiveButtonTitle:nil
-                                                    otherButtonTitles:nil];
-    
-    for (NSURL *fileURL in self.fileURLs) {
-        [actionSheet addButtonWithTitle:[fileURL lastPathComponent]];
-    }
-    
-    actionSheet.cancelButtonIndex = [actionSheet addButtonWithTitle:NSLocalizedString(@"Cancel", @"Cancel")];
-    
-    if(UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone){
-        [actionSheet showFromRect:CGRectZero inView:self.superView animated:YES];
-    } else {
-        if(self.barButtonItem)
-            [actionSheet showFromBarButtonItem:self.barButtonItem animated:YES];
-        else
-            [actionSheet showFromRect:self.rect inView:self.superView animated:YES];
-    }
-}
-
 #pragma mark - UIDocumentInteractionControllerDelegate
 
 - (void) documentInteractionControllerWillPresentOpenInMenu:(UIDocumentInteractionController *)controller
@@ -222,18 +174,6 @@
     
     // Inform app that the activity has finished
     [self activityDidFinish:YES];
-}
-
-#pragma mark - Action sheet delegate
-
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex
-{
-    if (buttonIndex != actionSheet.cancelButtonIndex) {
-        [self openDocumentInteractionControllerWithFileURL:self.fileURLs[buttonIndex]];
-    } else {
-	    // Inform app that the activity has finished
-	    [self activityDidFinish:NO];
-    }
 }
 
 @end
